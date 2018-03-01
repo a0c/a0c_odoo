@@ -98,11 +98,14 @@ class product_replace(models.TransientModel):
 
     @api.onchange('product_new')
     def highlight_candidate(self):
+        if self.product_new_cands:
+            self.product_new_cands = self.product_new_cands.replace(' style="color: green"', '').\
+                replace(u' <i class="fa fa-check" aria-hidden="true" title="Matches current New Product">\xa0</i>', '')
         if self.product_new and self.product_new_cands:
             name = self.product_new.name_get()[0][1]
             if name in self.product_new_cands:
                 self.product_new_cands = self.product_new_cands.replace(
-                    name, '<span style="color: green">%s <i class="fa fa-check" aria-hidden="true"></i></span>' % name)
+                    name, '<span style="color: green">%s <i class="fa fa-check" aria-hidden="true" title="Matches current New Product">&nbsp;</i></span>' % name)
 
     @api.multi
     def collect(self):
