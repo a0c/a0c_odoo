@@ -2,7 +2,7 @@ from openerp import api, fields, models, SUPERUSER_ID
 from openerp.exceptions import Warning
 
 from openerp.addons.auditlog_decorator.models.auditlog import audit
-from openerp.addons.sql_utils import ids_sql, fetchall, fetchone, fetchallsingle
+from openerp.addons.sql_utils import ids_sql, str_sql, drop_duplicates, fetchall, fetchone, fetchallsingle
 
 NO_DUPLICATES = 'Could not suggest any Duplicate Products, sorry. ' \
                        'You can still manually select products you want to replace.'
@@ -28,7 +28,7 @@ class product_replace(models.TransientModel):
     product_old_next = fields.Many2one('product.product', 'Next Old Product')
     product_new_next = fields.Many2one('product.product', 'Next New Product')
     product_old_id = fields.Integer(compute='_product_old_id', help="ID of Old Product")
-    product_new_cands = fields.Html(readonly=1, help='3 possible candidates for New Product with similar Name')
+    product_new_cands = fields.Html(readonly=1, help='Up to 3 suggestions for New Product with similar Name/Code')
     info = fields.Char(readonly=1)
 
     # products
@@ -47,16 +47,10 @@ class product_replace(models.TransientModel):
     @api.model
     def default_get(self, fields_list):
         res = super(product_replace, self).default_get(fields_list)
-        dupl_id, orig_id = self.next_suggestion()
+        dupl_id, orig_id = self.next_duplicates()
         if dupl_id:
-            res['product_old'] = res['product_old_id'] = dupl_id
-            res['product_new'] = orig_id
-            dupl_id, orig_id = self.next_suggestion(dupl_id)
-            if dupl_id:
-                res['product_old_next'] = dupl_id
-                res['product_new_next'] = orig_id
-            else:
-                res['info'] = NO_OTHER_DUPLICATES
+            res['product_old_next'] = dupl_id
+            res['product_new_next'] = orig_id
         else:
             res['info'] = NO_DUPLICATES
         return res
@@ -66,7 +60,7 @@ class product_replace(models.TransientModel):
             x.product_old_id = x.product_old.id
 
     @api.onchange('product_old')
-    def collect_usages(self):
+    def onchange_product_old(self):
         # update unknown_fields
         if self.product_old:
             supported_fields = self._supported_fields()
@@ -92,9 +86,20 @@ class product_replace(models.TransientModel):
             self.unknown_fields = False
         # collect usages
         self.collect()
+        # set product_new & product_new_cands
+        if not self._context.get('keep_cands'):
+            first_cand, product_new_cands = self._find_similar_name_or_code([self.product_old.name_template, self.product_old.default_code], self.product_old.id)
+            self.product_new_cands = product_new_cands
+            if not self._context.get('keep_new'):
+                self.product_new = first_cand or self.product_old
+                self.highlight_candidate()
 
     def _product_old_vals(self):
         return {'product.product': self.product_old.id, 'product.template': self.product_old.product_tmpl_id.id}
+
+    def onchange_product_old_keep_new(self, keep_cands=False):
+        self.with_context(keep_new=1, keep_cands=keep_cands).onchange_product_old()
+        self.highlight_candidate()
 
     @api.onchange('product_new')
     def highlight_candidate(self):
@@ -135,6 +140,7 @@ class product_replace(models.TransientModel):
     def replace(self):
         """ update in SQL to avoid onchanges of ORM """
         self.ensure_both_products()
+        self.ensure_products_differ()
         if self._uid != SUPERUSER_ID:
             raise Warning("Only Administrator is allowed to replace products. Even if allowed, normal users wouldn't "
                           "be able to see many objects because of Record Rules limitations (multi-company objects, "
@@ -172,6 +178,10 @@ class product_replace(models.TransientModel):
         if not (self.product_old and self.product_new):
             raise Warning("Old Product and New Product must be both specified")
 
+    def ensure_products_differ(self):
+        if self.product_old == self.product_new:
+            raise Warning("Old Product and New Product must be different")
+
     def ensure_old_product(self):
         if not self.product_old:
             raise Warning("Old Product must be specified")
@@ -186,7 +196,7 @@ class product_replace(models.TransientModel):
         if not recs: return
         if field_value is None:
             field_value = '%s=%s' % (field, value)
-        cmd = "UPDATE %s SET %s WHERE id in %s" % (recs._table, field_value, ids_sql(recs))
+        cmd = "UPDATE %s SET %s WHERE id in %s" % (recs._table, field_value, ids_sql(recs.ids))
         self._cr.execute(cmd)
         self._context['audit_msgs'].append(cmd)
         recs.invalidate_cache([field_value[:field_value.index('=')]], recs.ids)
@@ -219,7 +229,7 @@ class product_replace(models.TransientModel):
             if new_name and new_name != old_name:
                 # skip recs with non-default custom-set names
                 recs_safe_to_rename = recs.filtered(lambda x: x.name == old_name)
-                self._update_records(recs_safe_to_rename, field_value="name='%s'" % new_name.replace("'", "''"))
+                self._update_records(recs_safe_to_rename, field_value="name='%s'" % str_sql(new_name))
 
     def _onchange_each_record(self, records, old_onchange_fnc, new_onchange_fnc):
         """ calls onchange on records with *dynamic* args/kwargs that depend on each record """
@@ -232,7 +242,7 @@ class product_replace(models.TransientModel):
                 if new_name and new_name != old_name:
                     # skip recs with non-default custom-set names
                     recs_safe_to_rename = rec.filtered(lambda x: x.name == old_name)
-                    field_value = "name='%s'" % new_name.replace("'", "''")
+                    field_value = "name='%s'" % str_sql(new_name)
                     if field_value in field_value_by_recs:
                         field_value_by_recs[field_value] += recs_safe_to_rename
                     else:
@@ -244,7 +254,7 @@ class product_replace(models.TransientModel):
         for user_lang, recs in records.group_by('create_uid.lang'):
             value = self.product_new.with_context(lang=user_lang or 'en_US').mapped(value_field)[0]
             if isinstance(value, basestring):
-                value = value.replace("'", "''")
+                value = str_sql(value)
             self._update_records(recs, field_value=field_value_tmpl % value)
 
     def _invalidate_cache(self, recs, fields):
@@ -295,14 +305,14 @@ class product_replace(models.TransientModel):
         # use previously found duplicates
         self.product_old = self.product_old_next
         self.product_new = self.product_new_next
-        self.collect_usages()
+        self.onchange_product_old_keep_new()
         # find next duplicates
-        dupl_id, orig_id = self.next_suggestion()
+        dupl_id, orig_id = self.next_duplicates()
         self.product_old_next = dupl_id
         self.product_new_next = orig_id
         self.info = NO_OTHER_DUPLICATES if not dupl_id else False  # clear
 
-    def next_suggestion(self, since_product=None):
+    def next_duplicates(self, since_product=None):
         if since_product is None:
             since_product = self.product_old.id
         cmd = "SELECT id, default_code FROM product_product WHERE default_code = name_template %s ORDER BY id DESC" % \
@@ -316,24 +326,43 @@ class product_replace(models.TransientModel):
         return False, False
 
     @api.multi
-    def next_same_code_name(self):
-        dupl_id, product_new_cands = self._same_code_name_suggestion()
+    def suggest_next_same_code_name(self):
+        dupl_id, (first_cand, product_new_cands) = self.next_same_code_name_with_cands()
         self.product_old = dupl_id
-        self.product_new = dupl_id
+        self.product_new = first_cand or dupl_id
         self.product_new_cands = product_new_cands
-        self.collect_usages()
+        self.onchange_product_old_keep_new(keep_cands=1)
 
-    def _same_code_name_suggestion(self):
+    def next_same_code_name_with_cands(self):
         direction = self._context.get('direction', 'DESC')
         where = self.product_old and 'AND id %s %s' % (direction == 'DESC' and '<' or '>', self.product_old.id) or ''
         cmd = "SELECT id, default_code FROM product_product WHERE default_code = name_template %s ORDER BY id %s LIMIT 1" % (where, direction)
         same_code_name = fetchall(self._cr, cmd)
         for dupl_id, default_code in same_code_name:
-            cmd = "SELECT id FROM product_product WHERE name_template ilike '%%%s%%' and default_code!=name_template ORDER BY id LIMIT 3" % default_code
-            product_new_cands = fetchallsingle(self._cr, cmd)
-            product_new_cands = '\n'.join(name for id, name in self.env['product.product'].browse(product_new_cands).name_get())
-            return dupl_id, product_new_cands or False
-        return False, False
+            return dupl_id, self._find_similar_name_or_code([default_code], dupl_id)
+        return False, (False, False)
+
+    def _find_similar_name_or_code(self, names, skip_id):
+        """ :return: tuple(first_cand, product_new_cands) """
+        if not skip_id: return False, False
+        similar = self._find_similar_3x(names, skip_id)
+        products = self.env['product.product'].browse(similar)
+        product_new_cands = '<br>'.join(name for id, name in products.name_get())
+        if product_new_cands:
+            return similar[0], product_new_cands
+        return False, 'No suggestions for New Product, sorry. Try typing parts of Old Product\'s ' \
+                      'name/code or even dropping some characters from code.'
+
+    def _find_similar_3x(self, names, skip_id):
+        """ :return: at most 3x matching product_ids """
+        similar = "SELECT id FROM product_product WHERE %s ilike '%%%s%%' and id not in %s ORDER BY id LIMIT 3"
+        res = []
+        for name in drop_duplicates(names):
+            for field in 'name_template', 'default_code':
+                res += fetchallsingle(self._cr, similar % (field, str_sql(name), ids_sql([skip_id] + res)))
+                if len(res) >= 3:
+                    return res[:3]
+        return res[:3]
 
     @api.multi
     def read(self, fields=None, load='_classic_read'):

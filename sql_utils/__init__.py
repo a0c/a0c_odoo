@@ -1,5 +1,12 @@
-def ids_sql(recs):
-    return str(tuple(recs.ids)).replace(',)', ')')
+from collections import OrderedDict
+
+
+def ids_sql(ids):
+    return str(tuple(ids)).replace(',)', ')')
+
+
+def str_sql(line):
+    return line.replace("'", "''")
 
 
 def fetchdict(cr, cmd, args=()):
@@ -28,3 +35,7 @@ def fetchone(cr, cmd, args=()):
 
 def fetchsingle(cr, cmd, args=()):
     return fetchone(cr, cmd, args)[0]
+
+
+def drop_duplicates(ls):
+    return list(OrderedDict.fromkeys(ls))
