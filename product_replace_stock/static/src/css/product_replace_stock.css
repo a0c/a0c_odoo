@@ -1,0 +1,5 @@
+.cell_color_on [data-field="picking_id"],
+.cell_color_on [data-field="delivery_time"],
+.cell_color_on [data-field="inventory_id"] {
+    background-color: #c6edf9;
+}

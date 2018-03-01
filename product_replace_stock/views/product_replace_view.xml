@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+  <data>
+
+    <record id="view_product_replace_form" model="ir.ui.view">
+      <field name="name">product.replace.form</field>
+      <field name="model">product.replace</field>
+      <field name="inherit_id" ref="product_replace.view_product_replace_form"/>
+      <field name="arch" type="xml">
+        <group name="supported_objects_2" position="inside">
+          <b colspan="2">Stock Moves</b>
+          <b colspan="2">Pack Operations</b>
+          <b colspan="2">Quants</b>
+          <b colspan="2">Serial Numbers</b>
+          <b colspan="2">Inventories</b>
+          <b colspan="2">Inventory Lines</b>
+          <b colspan="2">Minimum Inventory Rules</b>
+        </group>
+        <group name="objects" position="inside">
+          <separator string="Stock Moves" attrs="{'invisible': [('moves','=',[(6,False,[])])]}"/>
+          <field name="moves" colspan="4" nolabel="1" attrs="{'invisible': [('moves','=',[(6,False,[])])]}"
+                 context="{'tree_view_ref': 'product_replace_stock.view_move_tree', 'form_view_ref': 'stock.view_move_form'}"/>
+          <separator string="Pack Operations" attrs="{'invisible': [('pack_ops','=',[(6,False,[])])]}"/>
+          <field name="pack_ops" colspan="4" nolabel="1" attrs="{'invisible': [('pack_ops','=',[(6,False,[])])]}">
+            <tree class="cell_color_on" create="false" delete="false">
+              <field name="id"/>
+              <field name="picking_id"/>
+              <field name="package_id" groups="stock.group_tracking_lot"/>
+              <field name="product_id"/>
+              <field name="product_uom_id" groups="product.group_uom"/>
+              <field name="lot_id" groups="stock.group_production_lot"/>
+              <field name="owner_id" groups="stock.group_tracking_owner"/>
+              <field name="product_qty"/>
+              <field name="location_id"/>
+              <field name="location_dest_id"/>
+              <field name="result_package_id" groups="stock.group_tracking_lot"/>
+            </tree>
+          </field>
+          <separator string="Quants" attrs="{'invisible': [('quants','=',[(6,False,[])])]}"/>
+          <field name="quants" colspan="4" nolabel="1" attrs="{'invisible': [('quants','=',[(6,False,[])])]}"
+                 context="{'tree_view_ref': 'product_replace_stock.view_stock_quant_tree'}"/>
+          <separator string="Serial Numbers" attrs="{'invisible': [('lots','=',[(6,False,[])])]}"/>
+          <field name="lots" colspan="4" nolabel="1" attrs="{'invisible': [('lots','=',[(6,False,[])])]}"
+                 context="{'tree_view_ref': 'product_replace_stock.view_production_lot_tree'}"/>
+          <separator string="Inventories" attrs="{'invisible': [('invs','=',[(6,False,[])])]}"/>
+          <field name="invs" colspan="4" nolabel="1" attrs="{'invisible': [('invs','=',[(6,False,[])])]}"
+                 context="{'tree_view_ref': 'product_replace_stock.view_inventory_tree'}"/>
+          <separator string="Inventory Lines" attrs="{'invisible': [('inv_lines','=',[(6,False,[])])]}"/>
+          <field name="inv_lines" colspan="4" nolabel="1" attrs="{'invisible': [('inv_lines','=',[(6,False,[])])]}">
+            <tree string="Inventory Details" colors="blue: product_qty != theoretical_qty; red: theoretical_qty &lt; 0"
+                  class="cell_color_on" create="false" delete="false">
+              <field name="id"/>
+              <field name="inventory_id"/>
+              <field name="product_id"/>
+              <field name="product_uom_id" groups="product.group_uom" string="UoM"/>
+              <field name="location_id" groups="stock.group_locations"/>
+              <field name="prod_lot_id" groups="stock.group_production_lot"/>
+              <field name="package_id" groups="stock.group_tracking_lot"/>
+              <field name="partner_id" groups="stock.group_tracking_owner"/>
+              <field name="theoretical_qty" readonly="1"/>
+              <field name="product_qty" string="Real Quantity"/>
+              <field name="state"/>
+            </tree>
+          </field>
+          <separator string="Minimum Inventory Rules" attrs="{'invisible': [('wh_orderpoints','=',[(6,False,[])])]}"/>
+          <field name="wh_orderpoints" colspan="4" nolabel="1" attrs="{'invisible': [('wh_orderpoints','=',[(6,False,[])])]}"
+                 context="{'tree_view_ref': 'product_replace_stock.view_warehouse_orderpoint_tree'}"/>
+        </group>
+      </field>
+    </record>
+
+  </data>
+</openerp>

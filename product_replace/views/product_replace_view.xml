@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+  <data>
+
+    <record id="view_product_replace_form" model="ir.ui.view">
+      <field name="name">product.replace.form</field>
+      <field name="model">product.replace</field>
+      <field name="arch" type="xml">
+        <form string="Replace Product">
+          <header name="top">
+            <div style="padding: 8px;float: left;">
+              <h2>Replace Product</h2>
+            </div>
+            <field name="state" widget="statusbar" style="padding-top: 12px;" statusbar_visible="draft,replaced"/>
+          </header>
+          <group name="fields" col="3">
+            <group string="Products" colspan="1">
+              <field name="product_old"/>
+              <label for="product_new"/>
+              <div>
+                <field name="product_new"/>
+                <field name="product_new_cands" attrs="{'invisible': [('product_new_cands','=',False)]}"/>
+              </div>
+              <field name="product_old_next" invisible="1"/>
+              <field name="product_new_next" invisible="1"/>
+              <field name="info" colspan="2" nolabel="1"/>
+              <button name="suggest_next_duplicates" string="Suggest Next Duplicates" type="object" colspan="2"
+                      attrs="{'invisible': [('product_old_next','=',False)]}" class="oe_highlight"
+                      help="Finds Old+New product pairs (e.g. [DPM465@-A] DPM465@-A and [4982012823197] DPM465@-A) where
+Old product has Name = Internal Reference (indicates a possible duplicate) and New product has the same Name, but
+different Internal Reference - that is probably a correct original product."/>
+              <div colspan="2">
+                <button name="next_same_code_name" string="&lt;&lt; Previous Name=Code" type="object" class="oe_inline" context="{'direction': 'ASC'}"
+                        help="Iterates over products with Name = Internal Reference. Such products are likely to have duplicates."/>
+                <label string="#" attrs="{'invisible': [('product_old_id','=',0)]}" class="oe_inline"/>
+                <field name="product_old_id" attrs="{'invisible': [('product_old_id','=',0)]}" class="oe_inline"/>
+                <button name="next_same_code_name" string="Next Name=Code &gt;&gt;" type="object" class="oe_inline"
+                        help="Iterates over products with Name = Internal Reference. Such products are likely to have duplicates."/>
+              </div>
+            </group>
+            <group string="Supported Objects" colspan="2" col="8">
+              <group name="supported_objects_1">
+                <b colspan="2">Pricelist Items</b>
+                <b colspan="2">Product Attribute Values</b>
+                <b colspan="2">Procurements</b>
+                <b colspan="2" class="oe_blue" title="Black - Product, Blue - Template">Pricelist Items</b>
+                <b colspan="2" class="oe_blue" title="Black - Product, Blue - Template">Product Price History</b>
+                <b colspan="2" class="oe_blue" title="Black - Product, Blue - Template">Product Attribute Price</b>
+                <b colspan="2" class="oe_blue" title="Black - Product, Blue - Template">Product Attribute Line</b>
+                <b colspan="2" class="oe_blue" title="Black - Product, Blue - Template">Packaging</b>
+                <b colspan="2" class="oe_blue" title="Black - Product, Blue - Template">Information about a product supplier</b>
+              </group>
+              <group name="supported_objects_2"/>
+              <group name="supported_objects_3"/>
+              <group name="supported_objects_4"/>
+            </group>
+          </group>
+          <header name="buttons">
+            <button name="replace" string="Replace Product" type="object" class="oe_highlight"
+                    confirm="Are you sure?" attrs="{'invisible': [('unknown_fields','!=',[(6,False,[])])]}"/>
+            <button name="replace" string="Replace Product in Supported Objects Only" type="object" class="oe_highlight"
+                    confirm="Are you sure?" attrs="{'invisible': [('unknown_fields','=',[(6,False,[])])]}"/>
+            <button name="replace" string="Replace Product in All Objects incl. Unsupported" type="object" context="{'replace_all': 1}"
+                    confirm="Are you sure?" attrs="{'invisible': [('unknown_fields','=',[(6,False,[])])]}"/>
+            <button name="delete" string="Delete Old Product" type="object" class="oe_highlight" confirm="Are you sure?" states="replaced"/>
+          </header>
+          <group>
+            <group name="unknown_fields" string="Warning! Unsupported Fields with References to Old Product" colspan="4"
+                   attrs="{'invisible': [('unknown_fields','=',[(6,False,[])])]}">
+              <div colspan="1">
+                <p>
+                  To avoid potentially harmful side-effects of onchanges and ORM writes, products get replaced in pure
+                  SQL. It is the task of <i>replace()</i> method to safely imitate onchanges and ORM writes by manually
+                  updating all the related fields normally set by onchanges and ORM writes (e.g. Stock Move's <i>name</i>
+                  field typically contains product's name - see it updated in module <i>product_replace_stock/</i>). Once
+                  properly updated in <i>replace()</i> method, the field should be made returned by
+                  <i>_supported_fields()</i> method to be effectively marked as Supported field and to no longer appear
+                  in the list below.
+                </p>
+                <p>Objects' Fields below have no <i>dedicated processing method</i> defined. You have 2x options:</p>
+              </div>
+              <div colspan="1">
+                <ul>
+                  <li>[FAST] <b>Use button <i>Replace Product in All Objects incl. Unsupported</i></b> to only
+                    replace the links to products, leaving potentially existing related fields (e.g. Stock Move's
+                    <i>name</i>) not updated on the Objects. Before using the button any Field below can be removed
+                    from the list to skip it from updating.</li>
+                  <li>[RECOMMENDED] <b>Override <i>replace()</i> method</b> to also update related fields in addition
+                    to the links to products + <b>override <i>_supported_fields()</i> method</b> to mark this link
+                    Field as supported. See example in module <i>product_replace_stock/</i>.</li>
+                </ul>
+              </div>
+              <field name="unknown_fields" nolabel="1" colspan="2"
+                     context="{'product': product_old, 'tree_view_ref': 'product_replace.view_model_fields_tree'}"/>
+            </group>
+            <group name="objects" colspan="4">
+              <separator string="Pricelist Items" attrs="{'invisible': [('pl_items','=',[(6,False,[])])]}"/>
+              <field name="pl_items" colspan="4" nolabel="1" attrs="{'invisible': [('pl_items','=',[(6,False,[])])]}"
+                     context="{'tree_view_ref': 'product_replace.product_pricelist_item_tree_view'}"/>
+              <separator string="Pricelist Items [Template]" attrs="{'invisible': [('pl_items_tmpl','=',[(6,False,[])])]}"/>
+              <field name="pl_items_tmpl" colspan="4" nolabel="1" attrs="{'invisible': [('pl_items_tmpl','=',[(6,False,[])])]}"
+                     context="{'tree_view_ref': 'product_replace.product_pricelist_item_tree_view'}"/>
+              <separator string="Product Attribute Values" attrs="{'invisible': [('attr_vals','=',[(6,False,[])])]}"/>
+              <field name="attr_vals" colspan="4" nolabel="1" attrs="{'invisible': [('attr_vals','=',[(6,False,[])])]}"
+                     context="{'tree_view_ref': 'product_replace.variants_tree_view'}"/>
+              <separator string="Procurements" attrs="{'invisible': [('procs','=',[(6,False,[])])]}"/>
+              <field name="procs" colspan="4" nolabel="1" attrs="{'invisible': [('procs','=',[(6,False,[])])]}"
+                     context="{'tree_view_ref': 'product_replace.procurement_tree_view'}"/>
+              <separator string="Product Price History [Template]" attrs="{'invisible': [('price_hist','=',[(6,False,[])])]}"/>
+              <field name="price_hist" colspan="4" nolabel="1" attrs="{'invisible': [('price_hist','=',[(6,False,[])])]}">
+                <tree class="cell_color_on" create="false" delete="false">
+                  <field name="id"/>
+                  <field name="product_template_id"/>
+                  <field name="datetime"/>
+                  <field name="cost"/>
+                  <field name="company_id" string="Company"/>
+                </tree>
+              </field>
+              <separator string="Product Attribute Price [Template]" attrs="{'invisible': [('attr_price','=',[(6,False,[])])]}"/>
+              <field name="attr_price" colspan="4" nolabel="1" attrs="{'invisible': [('attr_price','=',[(6,False,[])])]}">
+                <tree class="cell_color_on" create="false" delete="false">
+                  <field name="id"/>
+                  <field name="product_tmpl_id"/>
+                  <field name="value_id"/>
+                  <field name="price_extra"/>
+                </tree>
+              </field>
+              <separator string="Product Attribute Line [Template]" attrs="{'invisible': [('attr_line','=',[(6,False,[])])]}"/>
+              <field name="attr_line" colspan="4" nolabel="1" attrs="{'invisible': [('attr_line','=',[(6,False,[])])]}">
+                <tree class="cell_color_on" create="false" delete="false">
+                  <field name="id"/>
+                  <field name="product_tmpl_id"/>
+                  <field name="attribute_id"/>
+                  <field name="value_ids" widget="many2many_tags"/>
+                </tree>
+              </field>
+              <separator string="Packaging [Template]" attrs="{'invisible': [('packaging','=',[(6,False,[])])]}"/>
+              <field name="packaging" colspan="4" nolabel="1" attrs="{'invisible': [('packaging','=',[(6,False,[])])]}"
+                     context="{'tree_view_ref': 'product_replace.product_packaging_tree_view_product'}"/>
+              <separator string="Information about a product supplier [Template]" attrs="{'invisible': [('supplierinfo','=',[(6,False,[])])]}"/>
+              <field name="supplierinfo" colspan="4" nolabel="1" attrs="{'invisible': [('supplierinfo','=',[(6,False,[])])]}"
+                     context="{'tree_view_ref': 'product_replace.product_supplierinfo_tree_view'}"/>
+            </group>
+          </group>
+        </form>
+      </field>
+    </record>
+    <record id="action_product_replace" model="ir.actions.act_window">
+      <field name="name">Replace Product</field>
+      <field name="res_model">product.replace</field>
+      <field name="view_mode">form</field>
+      <field name="context">{'active_test': False}</field>
+      <field name="target">inline</field> <!-- hide Edit + Discard buttons -->
+    </record>
+    <menuitem action="action_product_replace" id="menu_action_product_replace" parent="base.menu_product" sequence="80" groups="base.group_no_one"/>
+
+  </data>
+</openerp>

@@ -36,5 +36,16 @@
       </field>
     </record>
 
+    <record id="view_auditlog_log_tree" model="ir.ui.view">
+      <field name="name">auditlog.log.tree</field>
+      <field name="model">auditlog.log</field>
+      <field name="inherit_id" ref="auditlog.view_auditlog_log_tree"/>
+      <field name="arch" type="xml">
+        <field name="create_date" position="after">
+          <field name="first_line"/>
+        </field>
+      </field>
+    </record>
+
   </data>
 </openerp>

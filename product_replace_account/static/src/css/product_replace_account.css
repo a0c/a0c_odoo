@@ -1,0 +1,4 @@
+.cell_color_on [data-field="invoice_id"],
+.cell_color_on [data-field="move_id"] {
+    background-color: #c6edf9;
+}

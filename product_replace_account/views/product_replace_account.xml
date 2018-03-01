@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<openerp>
+  <data>
+
+    <template id="assets_backend" name="product_replace assets" inherit_id="web.assets_backend">
+      <xpath expr="." position="inside">
+        <link rel="stylesheet" href="/product_replace_account/static/src/css/product_replace_account.css"/>
+      </xpath>
+    </template>
+
+  </data>
+</openerp>

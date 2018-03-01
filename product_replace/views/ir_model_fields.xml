@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+  <data>
+
+    <record id="view_model_fields_tree" model="ir.ui.view">
+      <field name="model">ir.model.fields</field>
+      <field name="inherit_id" ref="base.view_model_fields_tree"/>
+      <field name="mode">primary</field>
+      <field name="arch" type="xml">
+        <tree position="attributes">
+          <attribute name="create">false</attribute>
+          <attribute name="delete">true</attribute>
+          <attribute name="colors">blue:relation=='product.template'</attribute>
+        </tree>
+        <field name="state" position="replace">
+          <field name="relation"/>
+          <field name="state"/>
+          <button name="action_view_objects_with_product" string="Show Objects" type="object"/>
+        </field>
+      </field>
+    </record>
+
+  </data>
+</openerp>

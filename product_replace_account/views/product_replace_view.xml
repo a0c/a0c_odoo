@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+  <data>
+
+    <record id="view_product_replace_form" model="ir.ui.view">
+      <field name="name">product.replace.form</field>
+      <field name="model">product.replace</field>
+      <field name="inherit_id" ref="product_replace.view_product_replace_form"/>
+      <field name="arch" type="xml">
+        <group name="supported_objects_3" position="inside">
+          <b colspan="2">Analytic Lines</b>
+          <b colspan="2">Invoice Lines</b>
+          <b colspan="2">Journal Items</b>
+        </group>
+        <group name="objects" position="inside">
+          <separator string="Analytic Lines" attrs="{'invisible': [('analytic_lines','=',[(6,False,[])])]}"/>
+          <field name="analytic_lines" colspan="4" nolabel="1" attrs="{'invisible': [('analytic_lines','=',[(6,False,[])])]}"
+                 context="{'tree_view_ref': 'product_replace_account.view_account_analytic_line_tree'}"/>
+          <separator string="Invoice Lines" attrs="{'invisible': [('invoice_lines','=',[(6,False,[])])]}"/>
+          <field name="invoice_lines" colspan="4" nolabel="1" attrs="{'invisible': [('invoice_lines','=',[(6,False,[])])]}"
+                 context="{'tree_view_ref': 'product_replace_account.view_invoice_line_tree'}"/>
+          <separator string="Journal Items" attrs="{'invisible': [('move_lines','=',[(6,False,[])])]}"/>
+          <field name="move_lines" colspan="4" nolabel="1" attrs="{'invisible': [('move_lines','=',[(6,False,[])])]}"
+                 context="{'tree_view_ref': 'product_replace_account.view_move_line_tree'}"/>
+        </group>
+      </field>
+    </record>
+
+  </data>
+</openerp>

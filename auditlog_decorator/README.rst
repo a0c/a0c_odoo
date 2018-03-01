@@ -22,4 +22,8 @@ helper methods ``<method>_audit()`` to generate complex log messages.
 including the user name, method/action, record name, etc -- all those data
 that log record in audit database inherently contains.
 
+In addition to ``<method>_audit()`` one can also append messages to
+``self._context['audit_msgs']`` list while executing the annotated method.
+This list will be newline-joined and merged with ``messages`` before logging.
+
 True ``no_audit`` in context disables audit logging.
