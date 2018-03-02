@@ -13,7 +13,7 @@ with the help of ``Delete Old Product`` button.
 Two simple heuristics built into 3 buttons help finding potential duplicate
 products:
 
-- **Suggest Next Duplicates** button finds Old+New product pairs (e.g.
+- **Suggest Next Pair of Duplicates** button finds Old+New product pairs (e.g.
   ``[DPM465@-A] DPM465@-A`` and ``[4982012823197] DPM465@-A``) where Old
   product has Name = Internal Reference (indicates a possible duplicate) and
   New product has the same Name, but a different Internal Reference - that is
