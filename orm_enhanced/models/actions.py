@@ -10,11 +10,15 @@ def _with_xml_id_prefix(self, act_xml_id):
 BaseModel._with_xml_id_prefix = _with_xml_id_prefix
 
 
+def xml_id_rec(self, xml_id):
+    if '.' not in xml_id:
+        xml_id = self._with_xml_id_prefix(xml_id)
+    return self.env.ref(xml_id)
+
+
 def _resolve_action(self, act_xml_id):
     if isinstance(act_xml_id, basestring):
-        if '.' not in act_xml_id:
-            act_xml_id = self._with_xml_id_prefix(act_xml_id)
-        act = self.env.ref(act_xml_id)
+        act = xml_id_rec(self, act_xml_id)
     elif isinstance(act_xml_id, (int, long)):
         act = self.env['ir.actions.act_window'].browse(act_xml_id)
     else:
@@ -79,7 +83,7 @@ def action_view(self, form_xmlid, action_xmlid=None, ctx_upd=False):
     res = self.action(action_xmlid, ctx_upd)
     if len(self.ids) == 1 and form_xmlid:
         res['res_id'] = self.id
-        res['views'] = [(self.env.ref(form_xmlid).id, 'form')]
+        res['views'] = [(xml_id_rec(self, form_xmlid).id, 'form')]
     else:
         res['domain'] = "[('id','in',%s)]" % (str(self.ids),)
     return res
