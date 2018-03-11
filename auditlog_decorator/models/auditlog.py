@@ -29,12 +29,17 @@ def audit(fnc):
             logger.warn('Audit message method \'%s()\' missing in %s', msg_fnc, self._name)
         return log_prefix, message
 
+    def add_list_to_context(self, key):
+        if key not in self._context:
+            self = self.with_context(**{key: []})
+        return self
+
     def wrapper(self, *args, **kw):
         rule_obj = get_rule_obj(self)
+        self = add_list_to_context(self, 'terminate_audit')
         do_audit = self and not self._context.get('no_audit')
         if do_audit:
-            if 'audit_msgs' not in self._context:
-                self = self.with_context(audit_msgs=[])
+            self = add_list_to_context(self, 'audit_msgs')
             if self._name not in rule_obj.pool._auditlog_model_cache:
                 rule_obj.pool._auditlog_model_cache[self._name] = self.env['ir.model'].search([('model', '=', self._name)], limit=1).id
             # generate log message and create logs before calling fnc, cos it can delete self records
@@ -42,6 +47,9 @@ def audit(fnc):
             logs = rule_obj.sudo().create_logs(self.env.uid, self._name, self.ids, fnc.func_name,
                                                additional_log_values={'log_type': 'fast', 'message': html_newlines(message)})
         res = fnc(self, *args, **kw)
+        if self._context['terminate_audit']:
+            do_audit = False
+            logs.unlink()
         if do_audit:
             audit_msgs = '\n'.join(self._context['audit_msgs'])
             if audit_msgs:
