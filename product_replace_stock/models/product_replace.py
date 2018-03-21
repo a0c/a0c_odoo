@@ -1,6 +1,7 @@
 from openerp import api, fields, models
 
 from openerp.addons.auditlog_decorator.models.auditlog import audit
+from openerp.addons.sql_utils import ids_sql
 
 
 class product_replace(models.TransientModel):
@@ -31,10 +32,6 @@ class product_replace(models.TransientModel):
     def replace(self):
         super(product_replace, self.with_context(no_audit=1)).replace()
 
-        # update lots first, as lots could fail-fast when duplicates found
-        # todo: if this happens, find all usages of failed self.lots and replace them with existing duplicates
-        self._update_records(self.lots)
-
         # update moves' NAMES first - otherwise moves' product_id will be overwritten with product_new
         # skip moves with names like 'INV: Initial Inventory'
         old_onchange_fnc = lambda x: x.onchange_product_id(prod_id=self.product_old.id, loc_id=x.location_id.id,
@@ -50,6 +47,8 @@ class product_replace(models.TransientModel):
         self._update_records(self.quants)
         self._invalidate_cache(self.quants, ['name', 'inventory_value'])
 
+        self._replace_lots()
+
         self._update_records(self.invs)
 
         self._update_records(self.inv_lines)
@@ -60,8 +59,8 @@ class product_replace(models.TransientModel):
 
     def _replace_audit_recs(self):
         res = super(product_replace, self)._replace_audit_recs()
-        res.extend([(self.lots, 'S/N'), (self.moves, 'Stock Moves'), (self.pack_ops, 'Pack Operations'),
-                    (self.quants, 'Quants'), (self.invs, 'Inventories'), (self.inv_lines, 'Inventory Lines'),
+        res.extend([(self.moves, 'Stock Moves'), (self.pack_ops, 'Pack Operations'), (self.quants, 'Quants'),
+                    (self.lots, 'S/N'), (self.invs, 'Inventories'), (self.inv_lines, 'Inventory Lines'),
                     (self.wh_orderpoints, 'Minimum Inventory Rules')])
         return res
 
@@ -71,3 +70,24 @@ class product_replace(models.TransientModel):
                      'stock.inventory.line', 'stock.warehouse.orderpoint':
             res |= self._get_field(model)
         return res
+
+    def _replace_lots(self):
+        """ if lots fail to update because duplicates with product_new found -
+            find all usages of failed self.lots and replace them with existing duplicates """
+        unique_lots = self.lots.browse()
+        for lot in self.lots:
+            existing = self._find_existing_lot(lot)
+            if existing:
+                usages_of_old_lot = self._find_fields({'stock.production.lot': lot.id}, with_usages=True)
+                for field, usages_of_old in usages_of_old_lot.iteritems():
+                    self._update_records(usages_of_old, field_value='%s=%s' % (field.name, existing.id))
+                self._context['audit_msgs'].append('DELETE FROM %s WHERE id in %s' % (lot._table, ids_sql(lot.ids)))
+                lot.unlink()
+            else:
+                unique_lots |= lot
+        self._update_records(unique_lots)
+
+    def _find_existing_lot(self, lot):
+        """ can be overridden if default sql_constraint is changed """
+        return lot.search([('name', '=', lot.name), ('product_id', '=', self.product_new.id),
+                           ('ref', '=', self.product_new.ref)], limit=1)

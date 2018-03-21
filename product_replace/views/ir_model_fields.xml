@@ -15,7 +15,7 @@
         <field name="state" position="replace">
           <field name="relation"/>
           <field name="state"/>
-          <button name="action_view_objects_with_product" string="Show Objects" type="object"/>
+          <button name="action_view_recs_with_value" string="Show Records" type="object"/>
         </field>
       </field>
     </record>

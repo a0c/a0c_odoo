@@ -5,12 +5,12 @@ class ir_model_fields(models.Model):
     _inherit = 'ir.model.fields'
 
     @api.multi
-    def action_view_objects_with_product(self):
-        product = self._context.get('product')
-        if not product:
+    def action_view_recs_with_value(self):
+        value = self._context.get('field_value')
+        if not value:
             return
-        recs = self.get_objects_with_product(product)
+        recs = self.recs_with_value(value)
         return recs.with_context(allow_empty=1).action_view_tree(ctx_upd={'active_test': False})
 
-    def get_objects_with_product(self, product):
-        return self.env[self.model].with_context(active_test=False).search([(self.name, '=', product)], order='id desc')
+    def recs_with_value(self, value, limit=None):
+        return self.env[self.model].with_context(active_test=False).search([(self.name, '=', value)], limit=limit, order='id desc')

@@ -63,25 +63,7 @@ class product_replace(models.TransientModel):
     def onchange_product_old(self):
         # update unknown_fields
         if self.product_old:
-            supported_fields = self._supported_fields()
-            product_old_vals = self._product_old_vals()
-            res = self.env['ir.model.fields']
-            for field in res.search([('relation', 'in', ('product.product', 'product.template')),
-                                     ('id', 'not in', supported_fields.ids)], order='id desc'):
-                model = self.env[field.model]
-                # skip removed fields still present in db
-                if field.name not in model._fields:
-                    continue
-                field_8 = model._fields[field.name]
-                # only accept stored fields of regular models:
-                # skip Transient Models, SQL Views, non-stored related fields (API 8/7)
-                if model.is_transient() or not model._auto or non_stored_related(field_8):
-                    continue
-                # skip fields that were never written product_old to
-                if not model.search([(field.name, '=', product_old_vals[field.relation])], limit=1):
-                    continue
-                res += field
-            self.unknown_fields = res
+            self.unknown_fields = self._find_fields(self._product_old_vals(), self._supported_fields().ids)
         else:
             self.unknown_fields = False
         # collect usages
@@ -96,6 +78,27 @@ class product_replace(models.TransientModel):
 
     def _product_old_vals(self):
         return {'product.product': self.product_old.id, 'product.template': self.product_old.product_tmpl_id.id}
+
+    def _find_fields(self, relations_old_val, excluded_ids=None, with_usages=False):
+        res, res_recs = self.env['ir.model.fields'], {}
+        limit = None if with_usages else 1
+        for field in res.search([('relation', 'in', relations_old_val.keys()), ('id', 'not in', excluded_ids or [])], order='id desc'):
+            model = self.env[field.model]
+            # skip removed fields still present in db
+            if field.name not in model._fields:
+                continue
+            field_8 = model._fields[field.name]
+            # only accept stored fields of regular models:
+            # skip Transient Models, SQL Views, non-stored related fields (API 8/7)
+            if model.is_transient() or not model._auto or non_stored_related(field_8):
+                continue
+            # skip fields that were never written old_vals to
+            recs = field.recs_with_value(relations_old_val[field.relation], limit=limit)
+            if not recs:
+                continue
+            res += field
+            res_recs[field] = recs
+        return res_recs if with_usages else res
 
     def onchange_product_old_keep_new(self, keep_cands=False):
         self.with_context(keep_new=1, keep_cands=keep_cands).onchange_product_old()
@@ -162,7 +165,7 @@ class product_replace(models.TransientModel):
             product_old_vals = self._product_old_vals()
             for field in self.unknown_fields:
                 field_8 = self.env[field.model]._fields[field.name]
-                recs = field.get_objects_with_product(product_old_vals[field.relation])
+                recs = field.recs_with_value(product_old_vals[field.relation])
                 if field_8.type == 'many2one':
                     if field.relation == 'product.product':
                         self._update_records(recs, field.name)
@@ -284,7 +287,7 @@ class product_replace(models.TransientModel):
             product_old_vals = self._product_old_vals()
             prefixes = {'product.product': '', 'product.template': ' [Template]'}
             for field in self.unknown_fields:
-                recs = field.get_objects_with_product(product_old_vals[field.relation])
+                recs = field.recs_with_value(product_old_vals[field.relation])
                 res.append((recs, field.model_id.name + prefixes[field.relation]))
         return res
 

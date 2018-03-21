@@ -91,7 +91,7 @@ different Internal Reference - that is probably a correct original product."/>
                 </ul>
               </div>
               <field name="unknown_fields" nolabel="1" colspan="2"
-                     context="{'product': product_old, 'tree_view_ref': 'product_replace.view_model_fields_tree'}"/>
+                     context="{'field_value': product_old, 'tree_view_ref': 'product_replace.view_model_fields_tree'}"/>
             </group>
             <group name="objects" colspan="4">
               <separator string="Pricelist Items" attrs="{'invisible': [('pl_items','=',[(6,False,[])])]}"/>
