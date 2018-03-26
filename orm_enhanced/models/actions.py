@@ -80,7 +80,7 @@ BaseModel.action = action
 def action_view(self, form_xmlid, action_xmlid=None, ctx_upd=False):
     # to allow calls from other models (e.g. self.picking_id.action_view())
     # need a clean ctx => use action() instead of _read_act_window()
-    res = self.action(action_xmlid, ctx_upd)
+    res = self.with_context(allow_empty=1).action(action_xmlid, ctx_upd)
     if len(self.ids) == 1 and form_xmlid:
         res['res_id'] = self.id
         res['views'] = [(xml_id_rec(self, form_xmlid).id, 'form')]
