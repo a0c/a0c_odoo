@@ -78,6 +78,10 @@ def html_newlines(msg):
     return msg.replace('\n', '<br>\n')
 
 
+def html(msg):
+    return msg.replace('\n', '<br>\n').replace('\t', '&emsp;')
+
+
 def un_html(msg):
     for x, r in ('<b>', ''), ('</b>', ''), ('&emsp;', '  '), ('<p>', ''), ('</p>', ''), ('&gt;', '>'), ('&lt;', '<'):
         msg = msg.replace(x, r)
