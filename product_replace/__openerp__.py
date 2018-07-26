@@ -16,6 +16,7 @@
         'orm_enhanced',
     ],
     'data': [
+        'security/product_replace_security.xml',
         'views/product_replace.xml',
         'views/product_replace_view.xml',
         'views/ir_model_fields.xml',

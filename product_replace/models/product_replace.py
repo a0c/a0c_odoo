@@ -1,4 +1,4 @@
-from openerp import api, fields, models, SUPERUSER_ID
+from openerp import api, fields, models
 from openerp.exceptions import Warning
 
 from openerp.addons.auditlog_decorator.models.auditlog import audit
@@ -22,6 +22,7 @@ class product_replace(models.TransientModel):
     _name = 'product.replace'
 
     state = fields.Selection([('draft', 'Draft'), ('replaced', 'Replaced')], default='draft')
+    recs_count = fields.Integer('Records Found', readonly=1, help="Number of Records with a link to Old Product", default=-1)
     unknown_fields = fields.Many2many('ir.model.fields', 'product_replace_field_rel', 'wiz_id', 'field_id', ordered=1)
     product_old = fields.Many2one('product.product', 'Old Product', help='Product to replace')
     product_new = fields.Many2one('product.product', 'New Product', help='Replacement Product')
@@ -61,6 +62,8 @@ class product_replace(models.TransientModel):
 
     @api.onchange('product_old')
     def onchange_product_old(self):
+        self.state = 'draft'
+        self.recs_count = len(self.product_old) - 1
         # update unknown_fields
         if self.product_old:
             self.unknown_fields = self._find_fields(self._product_old_vals(), self._supported_fields().ids)
@@ -134,20 +137,25 @@ class product_replace(models.TransientModel):
         self.__collect(field_name, field, self.product_old.product_tmpl_id.id)
 
     def __collect(self, field_name, field, value):
-        recs = getattr(self, field_name)
+        recs = getattr(self.sudo(), field_name)
         res = self.product_old and recs.search([(field, '=', value)], order='id desc').ids or []
-        setattr(self, field_name, [(6, 0, res)])
+        # setattr() will only work for users from group "base.group_no_one" cos they have these fields in their View
+        setattr(self.sudo(), field_name, [(6, 0, res)])
+        # - non-admin: write recs to wiz using _origin. self is a UI-bound virtual rec of onchange,
+        # so self will only write to visible fields - and non-admin users don't see any recs in XML group 'objects'.
+        # - also, use .write() for writing to DB as setattr() checks for env.in_draft and updates cache only.
+        # - _origin is created by open_new() every time user navigates to menu Replace Product.
+        if hasattr(self, '_origin'):
+            self._origin.sudo().write({field_name: [(6, 0, res)]})
+        self.recs_count += len(res)
 
     @api.multi
     @audit
     def replace(self):
         """ update in SQL to avoid onchanges of ORM """
+        self = self.sudo()
         self.ensure_both_products()
         self.ensure_products_differ()
-        if self._uid != SUPERUSER_ID:
-            raise Warning("Only Administrator is allowed to replace products. Even if allowed, normal users wouldn't "
-                          "be able to see many objects because of Record Rules limitations (multi-company objects, "
-                          "limitations by Warehouse, etc).")
         self.state = 'replaced'
         # update pl_items' NAMES first
         self._onchange_records(self.pl_items, 'product_id_change', (self.product_old.id,), args_new=(self.product_new.id,))
@@ -272,6 +280,7 @@ class product_replace(models.TransientModel):
                   self.product_new.id, self.product_new.name_get()[0][1],
                   self.product_old.product_tmpl_id.id, self.product_old.product_tmpl_id.name_get()[0][1],
                   self.product_new.product_tmpl_id.id, self.product_new.product_tmpl_id.name_get()[0][1])
+        self = self.sudo()
         messages = [header]
         for recs, title in self._replace_audit_recs():
             if recs:
@@ -334,6 +343,7 @@ class product_replace(models.TransientModel):
         self.product_old = dupl_id
         self.product_new = first_cand or dupl_id
         self.product_new_cands = product_new_cands
+        # keep_cands: skip product_new / product_new_cands setting via _find_similar_name_or_code => already done above
         self.onchange_product_old_keep_new(keep_cands=1)
 
     def next_same_code_name_with_cands(self):
@@ -393,3 +403,9 @@ class product_replace(models.TransientModel):
 
     def _get_field_tmpl(self, model, field='product_tmpl_id'):
         return self.env['ir.model.fields'].search([('model', '=', model), ('name', '=', field), ('relation', '=', 'product.template')], limit=1)
+
+    @api.model
+    def open_new(self):
+        """ pre-create wiz to avoid UI glitches (Records Found = 0)
+            and to write to it from onchange by non-admin user """
+        return self._read_act_window('product_replace.action_product_replace', res_id=self.create({}).id)

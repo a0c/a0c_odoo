@@ -22,6 +22,7 @@ class product_replace(models.TransientModel):
     @audit
     def replace(self):
         super(product_replace, self.with_context(no_audit=1)).replace()
+        self = self.sudo()
 
         self._update_records(self.analytic_lines)
 

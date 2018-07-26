@@ -31,6 +31,7 @@ class product_replace(models.TransientModel):
     @audit
     def replace(self):
         super(product_replace, self.with_context(no_audit=1)).replace()
+        self = self.sudo()
 
         # update moves' NAMES first - otherwise moves' product_id will be overwritten with product_new
         # skip moves with names like 'INV: Initial Inventory'

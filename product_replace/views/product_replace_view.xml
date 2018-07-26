@@ -21,6 +21,13 @@
                 <field name="product_new"/>
                 <field name="product_new_cands" attrs="{'invisible': [('product_new_cands','=',False)]}"/>
               </div>
+              <label for="recs_count" attrs="{'invisible': [('recs_count', '&lt;', 0)]}"/>
+              <div attrs="{'invisible': [('recs_count', '&lt;', 0)]}">
+                <field name="recs_count" class="oe_inline"/>
+                <i class="fa fa-exclamation-triangle oe_inline" style="margin-left: 5px; padding-top: 4px;"
+                   title="Use Administrator user to see all the Records. Normal users aren't able to see many of the
+records because of Record Rules limitations (multi-company records, limitations by Warehouse, etc)." />
+              </div>
               <field name="product_old_next" invisible="1"/>
               <field name="product_new_next" invisible="1"/>
               <field name="info" colspan="2" nolabel="1"/>
@@ -93,7 +100,7 @@ different Internal Reference - that is probably a correct original product."/>
               <field name="unknown_fields" nolabel="1" colspan="2"
                      context="{'field_value': product_old, 'tree_view_ref': 'product_replace.view_model_fields_tree'}"/>
             </group>
-            <group name="objects" colspan="4">
+            <group name="objects" colspan="4" groups="base.group_no_one">
               <separator string="Pricelist Items" attrs="{'invisible': [('pl_items','=',[(6,False,[])])]}"/>
               <field name="pl_items" colspan="4" nolabel="1" attrs="{'invisible': [('pl_items','=',[(6,False,[])])]}"
                      context="{'tree_view_ref': 'product_replace.product_pricelist_item_tree_view'}"/>
@@ -145,6 +152,15 @@ different Internal Reference - that is probably a correct original product."/>
         </form>
       </field>
     </record>
+    <record id="view_product_replace_admin_form" model="ir.ui.view">
+      <field name="name">product.replace.admin.form</field>
+      <field name="model">product.replace</field>
+      <field name="groups_id" eval="[(6, 0, [ref('base.group_no_one')])]"/>
+      <field name="inherit_id" ref="view_product_replace_form"/>
+      <field name="arch" type="xml">
+        <i class="fa fa-exclamation-triangle oe_inline" position="replace"/>
+      </field>
+    </record>
     <record id="action_product_replace" model="ir.actions.act_window">
       <field name="name">Replace Product</field>
       <field name="res_model">product.replace</field>
@@ -152,7 +168,13 @@ different Internal Reference - that is probably a correct original product."/>
       <field name="context">{'active_test': False}</field>
       <field name="target">inline</field> <!-- hide Edit + Discard buttons -->
     </record>
-    <menuitem action="action_product_replace" id="menu_action_product_replace" parent="base.menu_product" sequence="80" groups="base.group_no_one"/>
+    <record id="action_server_product_replace" model="ir.actions.server">
+      <field name="name">Replace Product</field>
+      <field name="model_id" ref="model_product_replace"/>
+      <field name="state">code</field>
+      <field name="code">action = env['product.replace'].open_new()</field>
+    </record>
+    <menuitem action="action_server_product_replace" id="menu_action_product_replace" parent="base.menu_product" sequence="80" groups="group_replace_product"/>
 
   </data>
 </openerp>
