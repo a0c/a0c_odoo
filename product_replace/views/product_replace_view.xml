@@ -73,7 +73,7 @@ different Internal Reference - that is probably a correct original product."/>
           </header>
           <group>
             <group name="unknown_fields" string="Warning! Unsupported Fields with References to Old Product" colspan="4"
-                   attrs="{'invisible': [('unknown_fields','=',[(6,False,[])])]}">
+                   attrs="{'invisible': [('unknown_fields','=',[(6,False,[])])]}" groups="base.group_no_one">
               <div colspan="1">
                 <p>
                   To avoid potentially harmful side-effects of onchanges and ORM writes, products get replaced in pure

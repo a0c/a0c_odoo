@@ -56,6 +56,7 @@ class product_replace(models.TransientModel):
             res['info'] = NO_DUPLICATES
         return res
 
+    @api.depends('product_old')
     def _product_old_id(self):
         for x in self:
             x.product_old_id = x.product_old.id
@@ -66,9 +67,10 @@ class product_replace(models.TransientModel):
         self.recs_count = len(self.product_old) - 1
         # update unknown_fields
         if self.product_old:
-            self.unknown_fields = self._find_fields(self._product_old_vals(), self._supported_fields().ids)
+            self.unknown_fields = self._find_fields(self._product_old_vals(), self._supported_fields().ids, all_usages=1)
         else:
             self.unknown_fields = False
+        self._write_to_new({'unknown_fields': [(6, 0, self.unknown_fields.ids if self.unknown_fields else [])]})
         # collect usages
         self.collect()
         # set product_new & product_new_cands
@@ -82,11 +84,11 @@ class product_replace(models.TransientModel):
     def _product_old_vals(self):
         return {'product.product': self.product_old.id, 'product.template': self.product_old.product_tmpl_id.id}
 
-    def _find_fields(self, relations_old_val, excluded_ids=None, with_usages=False):
-        res, res_recs = self.env['ir.model.fields'], {}
-        limit = None if with_usages else 1
+    def _find_fields(self, relations_old_val, excluded_ids=None, with_usages=False, all_usages=False):
+        res, res_recs = self.sudo().env['ir.model.fields'], {}
+        limit = None if all_usages or with_usages else 1
         for field in res.search([('relation', 'in', relations_old_val.keys()), ('id', 'not in', excluded_ids or [])], order='id desc'):
-            model = self.env[field.model]
+            model = self.sudo().env[field.model]
             # skip removed fields still present in db
             if field.name not in model._fields:
                 continue
@@ -101,7 +103,12 @@ class product_replace(models.TransientModel):
                 continue
             res += field
             res_recs[field] = recs
+            self.recs_count += len(recs)
         return res_recs if with_usages else res
+
+    def _write_to_new(self, vals):
+        if hasattr(self, '_origin'):
+            self._origin.sudo().write(vals)
 
     def onchange_product_old_keep_new(self, keep_cands=False):
         self.with_context(keep_new=1, keep_cands=keep_cands).onchange_product_old()
@@ -145,8 +152,7 @@ class product_replace(models.TransientModel):
         # so self will only write to visible fields - and non-admin users don't see any recs in XML group 'objects'.
         # - also, use .write() for writing to DB as setattr() checks for env.in_draft and updates cache only.
         # - _origin is created by open_new() every time user navigates to menu Replace Product.
-        if hasattr(self, '_origin'):
-            self._origin.sudo().write({field_name: [(6, 0, res)]})
+        self._write_to_new({field_name: [(6, 0, res)]})
         self.recs_count += len(res)
 
     @api.multi
