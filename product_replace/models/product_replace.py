@@ -364,6 +364,8 @@ class product_replace(models.TransientModel):
     def _find_similar_name_or_code(self, names, skip_id):
         """ :return: tuple(first_cand, product_new_cands) """
         if not skip_id: return False, False
+        if any(not name for name in names):
+            raise Warning('Selected Product has a blank Internal Reference or Product Name. Fix this first.')
         similar = self._find_similar_3x(names, skip_id)
         products = self.env['product.product'].browse(similar)
         product_new_cands = '<br>'.join(name for id, name in products.name_get())
