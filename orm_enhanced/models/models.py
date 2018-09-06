@@ -26,18 +26,34 @@ BaseModel.partition_by = partition_by
 
 # PERFORMANCE methods
 
-def firsts(self, key, fields):
-    """ only prefetch `fields` of the *first* element of the key-field of recs.
-        avoids prefetching `fields` for *all* elements of the key-field of recs. """
-    field_model = self._fields[key].comodel_name
+def firsts(self, key):
+    """ returns *first* elements of the key-field of recs """
     ids = list(chain(*(x[key].ids[:1] for x in self)))
-    recs = self.env[field_model].browse(ids)
-    only_prefetch = recs._context.get('only_prefetch', {})
-    for f in fields:
-        only_prefetch['%s.%s' % (field_model, f)] = set(ids)
-    return recs.with_context(only_prefetch=only_prefetch)
+    recs = self.env[self._fields[key].comodel_name].browse(ids)
+    return recs
 
 BaseModel.firsts = firsts
+
+
+def no_prefetch(self, fields=None):
+    """ only prefetch `fields` for the *current* records (self).
+        avoids prefetching `fields` for *all* records _in_cache_without `fields` """
+    prefetch_ids = self._context.get('prefetch_ids', {})
+    if fields is None:
+        prefetch_ids[self._name] = set(self.ids)
+    else:
+        for f in fields:
+            prefetch_ids['%s.%s' % (self._name, f)] = set(self.ids)
+    return self.with_context(prefetch_ids=prefetch_ids)
+
+BaseModel.no_prefetch = no_prefetch
+
+
+def no_prefetch_field(self, key):
+    field_recs = self.mapped(key).no_prefetch()
+    return self.with_context(field_recs._context)
+
+BaseModel.no_prefetch_field = no_prefetch_field
 
 
 @api.model
@@ -50,12 +66,17 @@ def _in_cache_without(self, field):
     prefetch_ids = env.prefetch[self._name]
     prefetch_ids.update(self._ids)
     ids = filter(None, prefetch_ids - set(env.cache[field]))
-    if env.context.get('only_prefetch'):
-        only_prefetch = env.context['only_prefetch'].get(str(field))
-        if only_prefetch:
-            ids = [x for x in ids if x in only_prefetch]
+    ids = self._apply_prefetch_ids_in_context(ids, field)
     return self.browse(ids)
 
+def _apply_prefetch_ids_in_context(self, ids, field):
+    if self.env.context.get('prefetch_ids'):
+        prefetch_ids = self.env.context['prefetch_ids'].get(str(field), self.env.context['prefetch_ids'].get(self._name))
+        if prefetch_ids:
+            ids = [x for x in ids if x in prefetch_ids]
+    return ids
+
 BaseModel._in_cache_without = _in_cache_without
+BaseModel._apply_prefetch_ids_in_context = _apply_prefetch_ids_in_context
 
 # PERFORMANCE methods
