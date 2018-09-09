@@ -6,7 +6,7 @@ def ids_sql(ids):
 
 
 def str_sql(line):
-    return line.replace("'", "''")
+    return line.replace("'", "''").replace('%', '%%')
 
 
 def fetchdict(cr, cmd, args=()):
