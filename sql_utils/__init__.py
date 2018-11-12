@@ -9,6 +9,10 @@ def str_sql(line):
     return line.replace("'", "''").replace('%', '%%')
 
 
+def null_sql(obj):
+    return obj.id or 'NULL'
+
+
 def fetchdict(cr, cmd, args=()):
     cr.execute(cmd, args)
     return cr.dictfetchone()
