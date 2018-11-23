@@ -1,5 +1,6 @@
 from itertools import chain
 from openerp import api
+from openerp.osv.fields import _symbol_set_float
 from openerp.osv.orm import BaseModel
 
 
@@ -80,3 +81,29 @@ BaseModel._in_cache_without = _in_cache_without
 BaseModel._apply_prefetch_ids_in_context = _apply_prefetch_ids_in_context
 
 # PERFORMANCE methods
+
+
+def _force_float_fields_precisions(self, cr):
+    """ force requested precisions (digits) onto float fields
+        Example:    DIGITS = (16, 3)
+
+                    class project(models.Model):
+                        _float_precisions = {DIGITS: ['planned_hours', 'effective_hours', 'total_hours']}
+    """
+    if hasattr(self, '_float_precisions') and isinstance(self._float_precisions, dict):
+        for digits, fields in self._float_precisions.iteritems():
+            for field in fields:
+                # patch self._columns
+                column = self._columns[field]
+                column._digits = digits
+                column._symbol_f = lambda x: _symbol_set_float(column, x)  # update lambda with a new column closure
+                column._symbol_set = (column._symbol_c, column._symbol_f)  # update tuple with a new lambda
+                # patch self._fields in case digits already defined on a field.float()
+                field = self._fields[field]
+                field._column_digits = field._description_digits = field._digits = field._related__digits = field.digits = digits
+
+def _register_hook(self, cr):
+    """ stuff to do right after the registry is built """
+    _force_float_fields_precisions(self, cr)
+
+BaseModel._register_hook = _register_hook
