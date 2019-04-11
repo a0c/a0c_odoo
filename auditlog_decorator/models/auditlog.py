@@ -10,6 +10,7 @@ logger = logging.getLogger('[AUDIT]')
 class AuditlogLog(models.Model):
     _inherit = 'auditlog.log'
     _order = "create_date desc, id desc"
+    _rec_name = 'first_line'
 
     message = fields.Html(readonly=1)
     first_line = fields.Char(compute='_first_line')
