@@ -75,6 +75,9 @@ def _apply_prefetch_ids_in_context(self, ids, field):
         prefetch_ids = self.env.context['prefetch_ids'].get(str(field), self.env.context['prefetch_ids'].get(self._name))
         if prefetch_ids:
             ids = [x for x in ids if x in prefetch_ids]
+    if hasattr(self, '_no_prefetch_fields'):
+        if field.name in self._no_prefetch_fields:
+            ids = [x for x in ids if x in self.ids]
     return ids
 
 BaseModel._in_cache_without = _in_cache_without
