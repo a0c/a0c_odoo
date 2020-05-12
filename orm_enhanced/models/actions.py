@@ -32,7 +32,7 @@ def _resolve_action(self, act_xml_id):
             'views': [(False, 'tree'), (False, 'form')],
             'res_model': self._name,
             'type': 'ir.actions.act_window',
-            'context': self.env.user.context_get(),
+            'context': self.env.user.sudo(self._uid).context_get(),  # sudo() cos env.user is browsed as admin
             'target': 'current',
             'domain': [],
         }
@@ -66,7 +66,7 @@ BaseModel._read_act_window = _read_act_window
 def action(self, action_xmlid, ctx_upd=False):
     if not self and not self._context.get('allow_empty', False):
         return True
-    ctx = dict(self.env.user.context_get(), uid=self._uid, active_ids=self.ids, active_model=self._name)
+    ctx = dict(self.env.user.sudo(self._uid).context_get(), uid=self._uid, active_ids=self.ids, active_model=self._name)  # sudo() cos env.user is browsed as admin
     if self.ids:
         ctx['active_id'] = self.ids[0]
     if ctx_upd:
