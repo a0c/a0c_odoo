@@ -110,3 +110,17 @@ def _register_hook(self, cr):
     _force_float_fields_precisions(self, cr)
 
 BaseModel._register_hook = _register_hook
+
+
+@api.model
+def _read_group_sum_computed_fields(self, computed_fields, fields, res):
+    """ sum computed fields when grouping. only stored fields are summed properly by odoo core. """
+    fields_todo = computed_fields.intersection(set(fields))
+    if not fields_todo: return
+    for line in res:
+        if '__domain' in line:
+            recs = self.search(line['__domain'])
+            for field in fields_todo:
+                line[field] = sum(getattr(r, field) for r in recs)
+
+BaseModel._read_group_sum_computed_fields = _read_group_sum_computed_fields
