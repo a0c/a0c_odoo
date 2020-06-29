@@ -83,6 +83,12 @@ def html(msg):
     return msg.replace('\n', '<br>\n').replace('\t', '&emsp;')
 
 
+def html2(msg):
+    # \t: to fit line with many nbsp-s onto a single line, browser can sacrifice leading tabs (virtually trim them).
+    # we avoid this and preserve leading tabs by emulating &emsp; with 4 x &nbsp;.
+    return msg.replace('\n', '<br>\n').replace('\t', '&nbsp;&nbsp;&nbsp;&nbsp;').replace('-', '&#8209;')
+
+
 def un_html(msg):
     for x, r in ('<b>', ''), ('</b>', ''), ('&emsp;', '  '), ('<p>', ''), ('</p>', ''), ('&gt;', '>'), ('&lt;', '<'):
         msg = msg.replace(x, r)
