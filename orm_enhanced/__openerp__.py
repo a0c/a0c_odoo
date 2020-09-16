@@ -16,5 +16,6 @@ ORM Enhancements
         'base',
     ],
     'data': [
+        'wizard/message_wizard.xml',
     ],
 }
