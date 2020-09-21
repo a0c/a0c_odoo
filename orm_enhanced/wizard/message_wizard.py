@@ -4,8 +4,9 @@ from openerp import api, fields, models
 class message_wizard(models.TransientModel):
     _name = 'message.wizard'
     _description = 'Message Wizard'
+    _inherit = ['downloadable']
 
-    message = fields.Html('Message', required=True, readonly=1)
+    message = fields.Html('Message', readonly=1)
 
     @api.multi
     def action_view_message(self, title, msg_or_vals, form_xmlid=None, action_xmlid=None, ctx_upd=False):
