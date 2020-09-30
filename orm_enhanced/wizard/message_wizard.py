@@ -9,8 +9,8 @@ class message_wizard(models.TransientModel):
     message = fields.Html('Message', readonly=1)
 
     @api.multi
-    def action_view_message(self, title, msg_or_vals, form_xmlid=None, action_xmlid=None, ctx_upd=False):
-        """ example: return self.env['message.wizard'].action_view_message('Notifications Sent', msg) """
+    def act_msg(self, title, msg_or_vals, form_xmlid=None, action_xmlid=None, ctx_upd=False):
+        """ example: return self.env['message.wizard'].act_msg('Notifications Sent', msg) """
         if not isinstance(msg_or_vals, dict):
             msg_or_vals = {'message': msg_or_vals}
         form_xmlid = form_xmlid or 'orm_enhanced.view_message_wizard_form'
