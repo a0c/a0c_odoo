@@ -34,15 +34,15 @@ records because of Record Rules limitations (multi-company records, limitations 
               <button name="suggest_next_duplicates" string="Suggest Next Pair of Duplicates" type="object" colspan="2"
                       attrs="{'invisible': [('product_old_next','=',False)]}" class="oe_highlight"
                       help="Finds Old+New product pairs (e.g. [DPM465@-A] DPM465@-A and [4982012823197] DPM465@-A) where
-Old product has Name = Internal Reference (indicates a possible duplicate) and New product has the same Name, but
-different Internal Reference - that is probably a correct original product."/>
+Old product has Name = Barcode (indicates a possible duplicate) and New product has the same Name, but
+different Barcode - that is probably a correct original product."/>
               <div colspan="2">
                 <button name="suggest_next_same_code_name" string="&lt;&lt; Previous Name=Code" type="object" class="oe_inline" context="{'direction': 'ASC'}"
-                        help="Iterates over products with Name = Internal Reference. Such products are likely to have duplicates."/>
+                        help="Iterates over products with Name = Barcode. Such products are likely to have duplicates."/>
                 <label string="#" attrs="{'invisible': [('product_old_id','=',0)]}" class="oe_inline"/>
                 <field name="product_old_id" attrs="{'invisible': [('product_old_id','=',0)]}" class="oe_inline"/>
                 <button name="suggest_next_same_code_name" string="Next Name=Code &gt;&gt;" type="object" class="oe_inline"
-                        help="Iterates over products with Name = Internal Reference. Such products are likely to have duplicates."/>
+                        help="Iterates over products with Name = Barcode. Such products are likely to have duplicates."/>
               </div>
             </group>
             <group string="Supported Objects" colspan="2" col="8">
