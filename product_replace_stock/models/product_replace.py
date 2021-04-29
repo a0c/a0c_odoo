@@ -1,7 +1,7 @@
 from openerp import api, fields, models
 
 from openerp.addons.auditlog_decorator.models.auditlog import audit
-from openerp.addons.sql_utils import ids_sql
+from openerp.addons.sql_utils import ids_sql, fetchall
 
 
 class product_replace(models.TransientModel):
@@ -92,3 +92,28 @@ class product_replace(models.TransientModel):
         """ can be overridden if default sql_constraint is changed """
         return lot.search([('name', '=', lot.name), ('product_id', '=', self.product_new.id),
                            ('ref', '=', self.product_new.ref)], limit=1)
+
+
+class stock_production_lot(models.Model):
+    _inherit = 'stock.production.lot'
+
+    products_with_duplicate = fields.Char('Products with Duplicate S/N', compute='_products_with_duplicate')
+
+    def _products_with_duplicate(self):
+        if not self._context.get('allow_compute_products_with_duplicate'): return
+        cmd = """
+SELECT l.id, STRING_AGG(CONCAT('[', l.default_code, '] ', l.name_template), '\n')
+FROM stock_production_lot lot,
+     LATERAL (
+         SELECT lot.id, p.default_code, p.name_template
+         FROM stock_production_lot lot_inner
+             JOIN product_product p on lot_inner.product_id = p.id
+         WHERE lot_inner.name = lot.name AND lot_inner.id != lot.id -- lateral reference
+         ORDER BY p.default_code, p.name_template
+         ) l
+WHERE lot.id in %s
+GROUP BY l.id;
+"""
+        products_with_duplicate = {k: v for k, v in fetchall(self._cr, cmd, (tuple(self.ids),))}
+        for x in self:
+            x.products_with_duplicate = products_with_duplicate.get(x.id)

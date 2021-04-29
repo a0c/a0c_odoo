@@ -41,7 +41,8 @@
                  context="{'tree_view_ref': 'product_replace_stock.view_stock_quant_tree'}"/>
           <separator string="Serial Numbers" attrs="{'invisible': [('lots','=',[(6,False,[])])]}"/>
           <field name="lots" colspan="4" nolabel="1" attrs="{'invisible': [('lots','=',[(6,False,[])])]}"
-                 context="{'tree_view_ref': 'product_replace_stock.view_production_lot_tree'}"/>
+                 context="{'tree_view_ref': 'product_replace_stock.view_production_lot_tree',
+'allow_compute_products_with_duplicate': 1}"/>
           <separator string="Inventories" attrs="{'invisible': [('invs','=',[(6,False,[])])]}"/>
           <field name="invs" colspan="4" nolabel="1" attrs="{'invisible': [('invs','=',[(6,False,[])])]}"
                  context="{'tree_view_ref': 'product_replace_stock.view_inventory_tree'}"/>
