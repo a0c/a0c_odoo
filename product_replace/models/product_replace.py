@@ -144,8 +144,7 @@ class product_replace(models.TransientModel):
         self.__collect(field_name, field, self.product_old.product_tmpl_id.id)
 
     def __collect(self, field_name, field, value):
-        recs = getattr(self.sudo(), field_name)
-        res = self.product_old and recs.search([(field, '=', value)], order='id desc').ids or []
+        res = self.search_recs(field_name, field, value)
         # setattr() will only work for users from group "base.group_no_one" cos they have these fields in their View
         setattr(self.sudo(), field_name, [(6, 0, res)])
         # - non-admin: write recs to wiz using _origin. self is a UI-bound virtual rec of onchange,
@@ -154,6 +153,16 @@ class product_replace(models.TransientModel):
         # - _origin is created by open_new() every time user navigates to menu Replace Product.
         self._write_to_new({field_name: [(6, 0, res)]})
         self.recs_count += len(res)
+
+    def search_recs(self, field_name, field, value):
+        """ can be overridden """
+        recs = getattr(self.sudo(), field_name)
+        args = self.args_recs(recs, field_name, field, value)
+        return self.product_old and recs.search(args, order='id desc').ids or []
+
+    def args_recs(self, recs, field_name, field, value):
+        """ can be overridden """
+        return [(field, '=', value)]
 
     @api.multi
     @audit

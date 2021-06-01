@@ -15,10 +15,10 @@
           </header>
           <group name="fields" col="3">
             <group string="Products" colspan="1">
-              <field name="product_old"/>
+              <field name="product_old" options="{'no_create': True}"/>
               <label for="product_new"/>
               <div>
-                <field name="product_new"/>
+                <field name="product_new" options="{'no_create': True}"/>
                 <field name="product_new_cands" attrs="{'invisible': [('product_new_cands','=',False)]}"/>
               </div>
               <label for="recs_count" attrs="{'invisible': [('recs_count', '&lt;', 0)]}"/>

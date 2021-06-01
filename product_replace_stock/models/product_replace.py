@@ -3,9 +3,20 @@ from openerp import api, fields, models
 from openerp.addons.auditlog_decorator.models.auditlog import audit
 from openerp.addons.sql_utils import ids_sql, fetchall
 
+LOT_FIELDS_BY_WIZ_FIELD = {
+    'moves': 'restrict_lot_id',
+    'pack_ops': 'lot_id',
+    'quants': 'lot_id',
+    'lots': 'id',
+    'invs': 'lot_id',
+    'inv_lines': 'prod_lot_id',
+}
+
 
 class product_replace(models.TransientModel):
     _inherit = 'product.replace'
+
+    lot = fields.Many2one('stock.production.lot', 'Serial Number', help="Filter Records by this Serial Number")
 
     # products
     moves = fields.Many2many('stock.move', 'product_replace_stock_move_rel', 'wiz_id', 'move_id', ordered=1)
@@ -15,6 +26,16 @@ class product_replace(models.TransientModel):
     invs = fields.Many2many('stock.inventory', 'product_replace_stock_inventory_rel', 'wiz_id', 'inv_id', ordered=1)
     inv_lines = fields.Many2many('stock.inventory.line', 'product_replace_stock_inventory_line_rel', 'wiz_id', 'line_id', ordered=1)
     wh_orderpoints = fields.Many2many('stock.warehouse.orderpoint', 'product_replace_stock_wh_orderpoint_rel', 'wiz_id', 'orderpoint_id', ordered=1)
+
+    @api.onchange('lot')
+    def onchange_lot(self):
+        """ Lot is currently used for analysis only and thus disables Replace buttons. Here we force-clear
+            all recs loaded for analysis to prevent Replacing product just in these recs instead of in all recs. """
+        if not self.lot:
+            self.product_old = False
+            self.product_new = False
+        else:
+            self.product_old = self.lot.product_id  # auto-load Old Product
 
     @api.multi
     def collect(self):
@@ -26,6 +47,18 @@ class product_replace(models.TransientModel):
         self._collect('invs')
         self._collect('inv_lines')
         self._collect('wh_orderpoints')
+
+    def search_recs(self, field_name, field, value):
+        if self.lot and field_name not in LOT_FIELDS_BY_WIZ_FIELD:
+            return []  # hide fields w/o lot on them
+        return super(product_replace, self).search_recs(field_name, field, value)
+
+    def args_recs(self, recs, field_name, field, value):
+        """ override to only return recs related to lot selected """
+        res = super(product_replace, self).args_recs(recs, field_name, field, value)
+        if self.lot and field_name in LOT_FIELDS_BY_WIZ_FIELD:
+            res.append((LOT_FIELDS_BY_WIZ_FIELD[field_name], '=', self.lot.id))
+        return res
 
     @api.multi
     @audit
