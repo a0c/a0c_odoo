@@ -13,6 +13,10 @@ def null_sql(obj):
     return obj.id or 'NULL'
 
 
+def nonify(*vals):
+    return tuple(val or None for val in vals)
+
+
 def fetchdict(cr, cmd, args=()):
     cr.execute(cmd, args)
     return cr.dictfetchone()
