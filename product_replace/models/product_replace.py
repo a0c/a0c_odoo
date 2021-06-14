@@ -12,7 +12,7 @@ NO_OTHER_DUPLICATES = 'No other Duplicate Products could be found for suggesting
 
 
 def non_stored_related(field):
-    return field.type in ('many2many', 'many2one') and not field.store
+    return field.type in ('many2many', 'many2one', 'one2many') and not field.store
 
 
 EMPTY_DICT = {}
