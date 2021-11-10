@@ -90,6 +90,7 @@ def html2(msg):
 
 
 def un_html(msg):
-    for x, r in ('<b>', ''), ('</b>', ''), ('&emsp;', '  '), ('<p>', ''), ('</p>', ''), ('&gt;', '>'), ('&lt;', '<'):
+    for x, r in ('<b>', ''), ('</b>', ''), ('&emsp;', '  '), ('<p>', ''), ('</p>', ''), ('&gt;', '>'), ('&lt;', '<'),\
+                ('<br/>', '\n'), ('<br>', '\n'):
         msg = msg.replace(x, r)
     return msg
