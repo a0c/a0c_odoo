@@ -6,6 +6,7 @@
       <field name="model">ir.model.fields</field>
       <field name="inherit_id" ref="base.view_model_fields_tree"/>
       <field name="mode">primary</field>
+      <field name="priority">17</field>
       <field name="arch" type="xml">
         <tree position="attributes">
           <attribute name="create">false</attribute>
