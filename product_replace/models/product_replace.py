@@ -272,6 +272,10 @@ class product_replace(models.TransientModel):
         """ calls onchange on records with *dynamic* args/kwargs that depend on each record """
         field_value_by_recs = {}
         for user_lang, recs in records.group_by('create_uid.lang'):
+            if user_lang is None:
+                r = str(recs)
+                r = '%s|...' % r[:60] if len(r) > 60 else r
+                raise Warning('create_uid is not set on records %s. To proceed, please set it first.', (r,))
             recs_ctx = recs.with_context(lang=user_lang or 'en_US')
             for rec in recs_ctx:
                 old_name = (old_onchange_fnc(rec) or EMPTY_DICT).get('value', EMPTY_DICT).get('name')
