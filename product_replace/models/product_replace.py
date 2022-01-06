@@ -75,11 +75,22 @@ class product_replace(models.TransientModel):
         self.collect()
         # set product_new & product_new_cands
         if not self._context.get('keep_cands'):
+            self.ensure_old_product_default_code()
             first_cand, product_new_cands = self._find_similar_name_or_code([self.product_old.name_template, self.product_old.default_code], self.product_old.id)
             self.product_new_cands = product_new_cands
             if not self._context.get('keep_new'):
                 self.product_new = first_cand or self.product_old
                 self.highlight_candidate()
+
+    def ensure_old_product_default_code(self):
+        """ init Internal Reference on product_old if not set: try Name, NameName, NameNameName """
+        if not self.product_old: return
+        if not self.product_old.default_code and self.product_old.name_template:
+            for copies in (1, 2, 3):
+                default_code = self.product_old.name_template * copies
+                if not self.product_old.search([('default_code', '=', default_code)], limit=1):
+                    self.product_old.write({'default_code': default_code})
+                    return
 
     def _product_old_vals(self):
         return {'product.product': self.product_old.id, 'product.template': self.product_old.product_tmpl_id.id}
