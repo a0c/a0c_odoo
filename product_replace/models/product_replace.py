@@ -175,6 +175,12 @@ class product_replace(models.TransientModel):
         """ can be overridden """
         return [(field, '=', value)]
 
+    def _get(self, field_name):
+        """ non-admin user can only access records through self._origin: see `def __collect()` """
+        if hasattr(self, '_origin'):
+            self = self._origin
+        return getattr(self.sudo(), field_name)
+
     @api.multi
     @audit
     def replace(self):
