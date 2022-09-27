@@ -13,6 +13,10 @@ def null_sql(obj):
     return obj.id or 'NULL'
 
 
+def tuples_sql(tuples):
+    return ','.join(['%s'] * len(tuples))  # psycopg will properly substitute '%s' with a tuple
+
+
 def nonify(*vals):
     return tuple(val or None for val in vals)
 
