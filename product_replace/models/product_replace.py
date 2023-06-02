@@ -109,13 +109,19 @@ class product_replace(models.TransientModel):
             if model.is_transient() or not model._auto or non_stored_related(field_8):
                 continue
             # skip fields that were never written old_vals to
-            recs = field.recs_with_value(relations_old_val[field.relation], limit=limit)
-            if not recs:
-                continue
+            if relations_old_val[field.relation]:  # for tests: allow skipping search for recs
+                recs = field.recs_with_value(relations_old_val[field.relation], limit=limit)
+                if not recs:
+                    continue
+                res_recs[field] = recs
+                self.recs_count += len(recs)
             res += field
-            res_recs[field] = recs
-            self.recs_count += len(recs)
         return res_recs if with_usages else res
+
+    def msg_unsupported_fields(self, unsupported_fields):
+        return 'Unsupported fields:\n%s\n\n' \
+               'Please implement support for these fields first, or add them as ignored/irrelevant.' \
+               % '\n'.join(unsupported_fields)
 
     def _write_to_new(self, vals):
         if hasattr(self, '_origin'):
