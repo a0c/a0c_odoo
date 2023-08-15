@@ -91,6 +91,12 @@ class product_replace(models.TransientModel):
 
         self._update_records(self.wh_orderpoints)
 
+    def replace_audit(self):
+        log_prefix, message = super(product_replace, self).replace_audit()
+        if self.lot:
+            message = message.replace('\n', ' on SN <b>#%s %s</b>\n' % (self.lot.id, self.lot.name), 1)
+        return log_prefix, message
+
     def _replace_audit_recs(self):
         res = super(product_replace, self)._replace_audit_recs()
         res.extend([(self.moves, 'Stock Moves'), (self.pack_ops, 'Pack Operations'), (self.quants, 'Quants'),

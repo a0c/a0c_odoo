@@ -10,9 +10,10 @@
         <label for="recs_count" position="before">
           <field name="lot" options="{'no_create': True}"/>
         </label>
-        <header name="buttons" position="attributes">
-          <attribute name="attrs">{'invisible': [('lot','!=',False)]}</attribute>
-        </header>
+        <button name="delete" position="attributes">
+          <attribute name="attrs">{'invisible': ['|',('state','!=','replaced'),('lot','!=',False)]}</attribute>
+          <attribute name="states"></attribute>
+        </button>
         <group name="supported_objects_2" position="inside">
           <b colspan="2">Stock Moves</b>
           <b colspan="2">Pack Operations</b>
