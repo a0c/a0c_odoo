@@ -2,6 +2,10 @@
 <openerp>
   <data>
 
+    <!-- Move Replace Product menu under Warehouse menu -->
+    <menuitem action="product_replace.action_server_product_replace" id="product_replace.menu_action_product_replace"
+              parent="stock.menu_product_in_config_stock" sequence="200" groups="product_replace.group_replace_product"/>
+
     <record id="view_product_replace_form" model="ir.ui.view">
       <field name="name">product.replace.form</field>
       <field name="model">product.replace</field>
