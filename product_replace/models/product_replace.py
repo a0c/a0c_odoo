@@ -15,6 +15,11 @@ def non_stored_related(field):
     return field.type in ('many2many', 'many2one', 'one2many') and not field.store
 
 
+def n(r, blank='<BLANK>'):
+    name = r.name_get()
+    return name and name[0][1] or blank
+
+
 EMPTY_DICT = {}
 
 
@@ -225,7 +230,8 @@ class product_replace(models.TransientModel):
 
     def ensure_both_products(self):
         if not (self.product_old and self.product_new):
-            raise Warning("Old Product and New Product must be both specified")
+            raise Warning("Old Product (%s) and New Product (%s) must be both specified" %
+                          (n(self.product_old), n(self.product_new)))
 
     def ensure_products_differ(self):
         if self.product_old == self.product_new:

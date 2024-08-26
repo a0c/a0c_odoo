@@ -1,7 +1,10 @@
 from openerp import api, fields, models
+from openerp.exceptions import Warning
 
 from openerp.addons.auditlog_decorator.models.auditlog import audit
 from openerp.addons.sql_utils import ids_sql, fetchall
+
+from openerp.addons.product_replace.models.product_replace import n
 
 LOT_FIELDS_BY_WIZ_FIELD = {
     'moves': 'restrict_lot_id',
@@ -131,6 +134,15 @@ class product_replace(models.TransientModel):
         """ can be overridden if default sql_constraint is changed """
         return lot.search([('name', '=', lot.name), ('product_id', '=', self.product_new.id),
                            ('ref', '=', self.product_new.ref)], limit=1)
+
+    def ensure_both_products(self):
+        try:
+            super(product_replace, self).ensure_both_products()
+        except Warning, e:
+            if self.lot:
+                e.message = '%s\nSN: %s (%s)' % (e.message, self.lot.name, n(self.lot.product_id))
+                e.args = (e.message,)
+            raise
 
 
 class stock_production_lot(models.Model):
