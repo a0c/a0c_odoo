@@ -167,7 +167,7 @@ class product_replace(models.TransientModel):
 
     def __collect(self, field_name, field, value):
         res = self.search_recs(field_name, field, value)
-        # setattr() will only work for users from group "base.group_no_one" cos they have these fields in their View
+        # setattr() will only work for user from group "group_admin" cos admin has these fields in his View
         setattr(self.sudo(), field_name, [(6, 0, res)])
         # - non-admin: write recs to wiz using _origin. self is a UI-bound virtual rec of onchange,
         # so self will only write to visible fields - and non-admin users don't see any recs in XML group 'objects'.

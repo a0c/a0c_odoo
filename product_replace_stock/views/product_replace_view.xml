@@ -5,6 +5,8 @@
     <!-- Move Replace Product menu under Warehouse menu -->
     <menuitem action="product_replace.action_server_product_replace" id="product_replace.menu_action_product_replace"
               parent="stock.menu_product_in_config_stock" sequence="200" groups="product_replace.group_replace_product"/>
+    <menuitem id="stock.menu_product_in_config_stock" name="Products"
+            parent="stock.menu_stock_configuration" sequence="45" groups="base.group_no_one,product_replace.group_replace_product"/>
 
     <record id="view_product_replace_form" model="ir.ui.view">
       <field name="name">product.replace.form</field>
@@ -27,6 +29,14 @@
           <b colspan="2">Inventory Lines</b>
           <b colspan="2">Minimum Inventory Rules</b>
         </group>
+      </field>
+    </record>
+    <record id="view_product_replace_admin_form" model="ir.ui.view">
+      <field name="name">product.replace.admin.form</field>
+      <field name="model">product.replace</field>
+      <field name="groups_id" eval="[(6, 0, [ref('product_replace.group_admin')])]"/>
+      <field name="inherit_id" ref="product_replace.view_product_replace_admin_form"/>
+      <field name="arch" type="xml">
         <group name="objects" position="inside">
           <separator string="Stock Moves" attrs="{'invisible': [('moves','=',[(6,False,[])])]}"/>
           <field name="moves" colspan="4" nolabel="1" attrs="{'invisible': [('moves','=',[(6,False,[])])]}"
