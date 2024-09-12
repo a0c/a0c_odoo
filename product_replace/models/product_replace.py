@@ -131,6 +131,8 @@ class product_replace(models.TransientModel):
     def _write_to_new(self, vals):
         if hasattr(self, '_origin'):
             self._origin.sudo().write(vals)
+        else:
+            self.sudo().write(vals)
 
     def onchange_product_old_keep_new(self, keep_cands=False):
         self.with_context(keep_new=1, keep_cands=keep_cands).onchange_product_old()
